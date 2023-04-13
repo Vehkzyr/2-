@@ -14,19 +14,21 @@ pseudocódigo de partida:
   Computación:
 
 ```ruby
-d[N][N]=0; // inicialización de todas las componentes de d a cero;
-for (i=0; i<N; i++) {
-  for(j=0; j<N; j++) {
-    for (k=0; k<8; k++) {
-      d[i][j] += 2 * a[i][k] * (b[k][j]- c[k]);
+
+d[N][N] = 0; // Inicialización de todas las componentes de d a cero
+
+for (i = 0; i < N; i++) {
+  for(j = 0; j < N; j++) {
+    for (k = 0; k < 8; k++) {
+      d[i][j] += 2 * a[i][k] * (b[k][j] - c[k]);
     }
   }
 } 
 
-f=0;
-for (i=0; i<N; i++) {
-  e[i]= d[ind[i]][ind[i]]/2;
-  f+=e[i];
+f = 0;
+for (i = 0; i < N; i++) {
+  e[i] = d[ind[i]][ind[i]]/2;
+  f += e[i];
 }
 
 ```
