@@ -60,33 +60,39 @@ ii) Programa secuencial con optimizaciones basadas en el uso de memoria caché:
 3. Fusión y/o intercambio de lazos.
 4. Desenrollamiento de lazos.
 5. Realización de operaciones por bloques
-6. Búsqueda de la mejor combinación de las optimizaciones anteriores.
+6. Búsqueda de la mejor combinación de las optimizaciones anteriores.  
+  
 iii) Programa optimizado paralelizado utilizando paralelismo a nivel de datos (procesamiento
-vectorial SIMD).
-Realizar una implementación alternativa a la del apartado anterior, utilizando las extensiones
+vectorial SIMD). Realizar una implementación alternativa a la del apartado anterior, utilizando las extensiones  
 AVX512 para conseguir paralelismo a nivel de datos.
+  
 iv) Programa optimizado paralelizado utilizando programación paralela en memoria
-compartida (OpenMP).
+compartida (OpenMP).  
+
 Por último, realizar otra implementación alternativa a la del apartado ii), utilizando paralelismo
-mediante OpenMP. Deben estudiarse los efectos de los siguientes factores:
+mediante OpenMP. Deben estudiarse los efectos de los siguientes factores:  
+
 1. Variación del número de hilos utilizados.
 2. Empleo de distintos mecanismos de “Scheduling”.
 3. Uso de la cláusula “Collapse”.
+  
 En este apartado no está permitido ni el uso de variables tipo “reduction” ni el de extensiones
-vectoriales.
+vectoriales.  
+
 Experimentación:
 Para la realización de los experimentos se proporciona un script que se encargará de la
 compilación y ejecución del código. El programa debe aceptar únicamente 2 parámetros como
 argumentos de entrada, correspondientes a los valores de N (tamaño) y C (número de cores
-empleado).
+empleado).  
+
 Resulta de especial interés para la comprensión de los experimentos comprobar en el manual
 del compilador el efecto de compilar los códigos con los distintos niveles de optimización
-automática.
-Es requisito indispensable que el programa entregado funcione con este script para la
-corrección de la práctica.
+automática.    
+
 Para el uso de extensiones vectoriales debe incluirse en el código fuente la cabecera
 “#include <immintrin.h>”. Para el uso de OpenMP debe incluirse la cabecera “#include
-<omp.h>”.
+<omp.h>”.  
+
 Hacer experimentos considerando que el número N de filas y columnas de la matriz toma los
 valores siguientes: N=250, 500, 750, 1000, 1500, 2000, 2550, 3000. En todos los casos hacer
 reserva de memoria dinámica de las matrices y vectores e inicializarlos con valores aleatorios
