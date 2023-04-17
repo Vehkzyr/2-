@@ -10,105 +10,200 @@
 #include <unistd.h>
 #include <immintrin.h>
 
-void fillMatrix (double* matrix,int line, int column, bool isRandom);
+double AVXMatrixOperation(double *a, double *b, double *c, double *d, int* ind, int size, int columnas);
+void fillMatrix (double* matrix,int line, int column);
+
 void start_counter();
 double get_counter();
 double mhz();
 
-/* Initialize the cycle counter */
+/* Inicializamos el contador de ciclos */
 
 static unsigned cyc_hi = 0;
 static unsigned cyc_lo = 0;
 
 int main(int argc, char* argv[]) {
 
-    double ck;
+    /* Inicializamos las variables */
+    //Doubles
+    double *a = NULL, *b = NULL, *c = NULL, *e = NULL; //matrices y vector que almacenan valores aleatorios de tipo double.
+    double *d = NULL; //matriz que rellenamos con 0
+    double f = 0.0; //variable de salida
+    double ck; //double donde meteremos el numero de ciclos de reloj
+
+    //Enteros
+    int *ind, *posicionLibre; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
+    int i = 0, j = 0, k = 0; // indices usados en los bucles
+    int random, size, filas, columnas; // variables a usar en las operaciones
 
     if(argc != 2){
         perror("\nERROR: use example: ./p2_ap1 N\n\n");
         exit(EXIT_FAILURE);
     }
+    //Igualamos tamanho por el valor que le pasamos por linea de comandos
+    size = atoi(argv[1]);
 
-    if (atoi(argv[1]) <= 0 ) {
+    if (size <= 0 ) {
         perror("\nERROR: wrong value for N\n");
         exit(EXIT_FAILURE);
     }
 
-    //igualamos la N por el valor que le pasamos por linea de comandos
-    int N = atoi(argv[1]);
-
-    double a[N][8], b[8][N], c[8], e[N]; //matrices y vector que almacenan valores aleatorios de tipo double.
-    int ind[N]; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
-    int i, j, k, random;
-    int posicionLibre[N];
-
     //Con srand() establecemos la semilla del generador de numeros aleatorios
     srand(34);
 
-    double f = 0.0; //variable de salida
+    /* Inicializamos las matrices y vectores */
 
-    double d[N][N]; //matriz que rellenamos con 0
+    //A
+    filas = size;
+    columnas = 8;
+    a = (double *) malloc(filas  * columnas * sizeof(double));
+
+    //B
+    filas = 8;
+    columnas = size;
+    b = (double *) malloc(filas * columnas * sizeof(double));
+
+    //D
+    filas = size;
+    columnas = size;
+    //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
+    d = (double *) calloc(filas * columnas, sizeof(double));
+
+    //Inicializamos c, e, posicionLibre e ind
+    c = (double *) malloc(8 * sizeof(double));
+    e = (double *) malloc(size * sizeof(double));
+    posicionLibre = (int *) malloc(size * sizeof(int));
+    ind = (int *) malloc(size * sizeof(int));
 
     start_counter();
 
     //Incializamos un vector con N posiciones de tal manera que sabemos que esta posicion esta libre
-    for (i = 0; i < N-4; i += 4) {
+    for (i = 0; i < size - 4; i += 4) {
         posicionLibre[i] = 0;
         posicionLibre[i+1] = 0;
         posicionLibre[i+2] = 0;
     }
 
-    //En este for rellenamos el vector ind con numeros aleatorios entre 0 y N, y cuando ocupamos la posicion ponemos un 1
+    //En este for rellenamos el vector ind con numeros aleatorios entre 0 y tamanho, y cuando ocupamos la posicion ponemos un 1
     //en el vector posicion libre para saber que su posicion esta ocupada y asi no repetir numeros
-    for (i = 0; i < N; i++){
-        random = rand()%N;
-        while (posicionLibre[random] == 1) random = rand()%N;
+    for (i = 0; i < size; i++){
+        random = rand() % size;
+        while (posicionLibre[random] == 1) random = rand() % size;
 
         ind[random] = i;
         posicionLibre[random] = 1;
     }
 
+    /* Rellenamos las matrices y vectores con numeros aleatorios */
+    i = 0; j = 0; columnas = 0;
     //Le pasamos el puntero de la primera fila y la primera columna para despues moverlo en la funcion a la fila y columna deseada
-    fillMatrix(&a[0][0], N, 8, true);
-    fillMatrix(&b[0][0], 8, N, true);
-    fillMatrix(&d[0][0], N, N, false);
+    fillMatrix(&a[i * columnas + j], size, 8);
+    fillMatrix(&b[i * columnas + j], 8, size);
     //Para rellenar el array le decimos que es una matriz 1x8 ( si lo pensamos realmente es lo que es un array bidimensional )
-    fillMatrix(&c[0], 1, 8, true);
+    fillMatrix(&c[0], 1, 8);
 
-    // Creamos un vector de 8 doubles con valor 2.0
-    __m256d dos = _mm256_set1_pd(2.0);
+    columnas = size;
 
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j += 4) {
-            __m256d temp = _mm256_setzero_pd(); // Vector de 4 doubles con valor 0.0
-            for (k = 0; k < 8; k += 4) {
-                __m256d a_vec = _mm256_load_pd(&a[i][k]); // Cargamos un vector de 4 doubles desde a[i][k]
-                __m256d b_vec = _mm256_load_pd(&b[k][j]); // Cargamos un vector de 4 doubles desde b[k][j]
-                __m256d c_vec = _mm256_load_pd(&c[k]); // Cargamos un vector de 4 doubles desde c[k]
+    /* Realizamos las operaciones */
 
-                // Realizamos las operaciones vectoriales
-                temp = _mm256_add_pd(temp, _mm256_mul_pd(dos, _mm256_mul_pd(a_vec, _mm256_sub_pd(b_vec, c_vec))));
-            }
-            _mm256_store_pd(&d[i][j], temp); // Almacenamos el resultado en d[i][j:i+3]
-        }
-    }
-
-
-    f = 0;
-    for (i = 0; i < N; i++) {
-        e[i] = d[ind[i]][ind[i]] / 2;
-        f += e[i];
-    }
+    //Transformamos las operaciones a AVX y para simplicidad en la lectura del codigo lo hacemos en una funcion a parte
+    f = AVXMatrixOperation(a, b, c, d, ind, size, columnas);
 
     ck = get_counter();
 
+    // Liberaciones de memoria
+    free(a); free(b); free(c); free(d); free(e); free(posicionLibre); free(ind);
+
+    //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
 
-    //calculamos el tiempo de ejecucion
-
-
-    //imprimimos el clock
+    // imprimimos el clock
     printf("\nClocks = %1.2lf \n",ck);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////* FUNCIONES DE OPERACION *////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+* @param double* a = puntero que apunta a la posicion de a
+* @param double* b = puntero que apunta a la posicion de b
+* @param double* c = puntero que apunta a la posicion de c
+* @param double* d = puntero que apunta a la posicion de d
+* @param double* ind = puntero que apunta a la posicion de ind
+* @param int size = numero que determina el tamaño de la matriz d (aunque en el codigo tmb influye en el resto)
+* @param int columnas = numero de columnas
+* @description realiza las operaciones indicadas con AVX (Advanced Vector Extensions), que permiten realizar operaciones
+ *             de cálculo intensivo de forma más eficiente en aplicaciones que requieren el procesamiento de grandes
+ *             cantidades de datos
+* @return devuelve un double con las operaciones realizadas
+*/
+double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind, int size, int columnas) {
+    int i, j, k;
+
+    /* Operaciones sobre d */
+    // Bucle anidado para iterar sobre las filas y columnas de la matriz
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            // Cálculo del índice para acceder al elemento (i,j) de la matriz
+            int ij = i * columnas + j;
+
+            // Inicialización de la variable de suma para la operación matricial
+            __m256d sum = _mm256_setzero_pd();
+
+            // Bucle interno para iterar sobre la dimensión k y realizar la operación matricial
+            for (k = 0; k < 8; k++) {
+                // Cálculo de los índices para acceder a los elementos de las matrices a, b y c
+                int ik = i * 8 + k;
+                int kj = k * columnas + j;
+
+                // Carga del elemento de la matriz a en un registro AVX para hacer broadcasting
+                __m256d a_ik = _mm256_broadcast_sd(&a[ik]);
+                // Carga de 4 elementos de la matriz b en un registro AVX sin alineación
+                __m256d b_kj = _mm256_loadu_pd(&b[kj]);
+                // Carga del elemento de la matriz c en un registro AVX para hacer broadcasting
+                __m256d c_k = _mm256_broadcast_sd(&c[k]);
+                // Resta de los elementos de los registros AVX b_kj y c_k
+                __m256d diff = _mm256_sub_pd(b_kj, c_k);
+                // Multiplicación de los elementos de los registros AVX a_ik y diff
+                __m256d prod = _mm256_mul_pd(a_ik, diff);
+                // Duplicación de los elementos de prod en un nuevo registro AVX
+                __m256d prod2 = _mm256_add_pd(prod, prod);
+                // Acumulación del registro AVX prod2 en el registro AVX sum
+                sum = _mm256_add_pd(sum, prod2);
+            }
+            // Creación de un array temporal de tamaño 4 y alineado a 32 bytes para almacenar los valores del registro AVX sum
+            double tmp[4]__attribute__((aligned(32)));
+            // Almacenamiento de los elementos de sum en el array temporal tmp
+            _mm256_store_pd(tmp, sum);
+            // Acumulación del resultado de tmp en el elemento (i,j) de la matriz d
+            d[ij] += tmp[0] + tmp[1] + tmp[2] + tmp[3];
+        }
+    }
+
+    /* Operaciones para el calculo de f */
+
+    // Inicia una variable __m256d sum, que es un vector de 256 bits que contiene 4 números en punto flotante de doble precisión, y lo inicializa en cero.
+    __m256d sum = _mm256_setzero_pd();
+
+    // Para cada índice "i" en el rango [0, size):
+    for (i = 0; i < size; i++) {
+        // Calcula el índice "index" como el índice de la matriz d correspondiente a la fila y columna especificadas por los valores de ind[i].
+        int index = ind[i] * size + ind[i];
+        // Crea un vector __m256d "val" que contiene el valor de d[index], copiando ese valor en cada posición del vector.
+        __m256d val = _mm256_broadcast_sd(&d[index]);
+        // Agrega el vector "val" al vector "sum" utilizando la operación "addition" de AVX.
+        sum = _mm256_add_pd(sum, val);
+    }
+
+    // Crea un arreglo "tmp" de 4 elementos en doble precisión y alineado a 32 bytes.
+    double tmp[4]__attribute__((aligned(32)));
+
+    // Almacena el contenido del vector "sum" en el arreglo "tmp".
+    _mm256_store_pd(tmp, sum);
+
+    // Devuelve la suma de los valores del arreglo "tmp"
+    return tmp[0] + tmp[1] + tmp[2] + tmp[3];
 }
 
 /*
@@ -119,21 +214,20 @@ int main(int argc, char* argv[]) {
 * @description esta funcion rellena matrices de numeros aleatorios si se le indica o 0 si no
 * @return retorna la matriz pasada como argumento rellena de lo indicado (random o 0)
  * */
-void fillMatrix (double* matrix, int line, int column, bool isRandom) {
+void fillMatrix (double* matrix, int line, int column) {
     //Recorremos las filas con este primer for
     for(int i = 0; i < line; i++) {
         //Recorremos las columnas con este segundo for
         for (int j = 0; j < column; j++) {
-            //Si isRandom es true rellenamos la matriz con numeros aleatorios
-            if (isRandom){
-                //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
-                *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
-            }
-                //Si isRandom == false, metemos 0 en cada posicion
-            else *(matrix + i * column + j) = 0;
+            //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
+            *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////* FUNCIONES DE RELOJ *////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Set *hi and *lo to the high and low order bits of the cycle counter.
 Implementation requires assembly code to use the rdtsc instruction. */

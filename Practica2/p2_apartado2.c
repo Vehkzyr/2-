@@ -9,99 +9,149 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void fillMatrix (double* matrix,int line, int column, bool isRandom);
+void fillMatrix (double* matrix,int line, int column);
+
 void start_counter();
 double get_counter();
 double mhz();
 
-/* Initialize the cycle counter */
+/* Inicializamos el contador de ciclos */
 
 static unsigned cyc_hi = 0;
 static unsigned cyc_lo = 0;
 
 int main(int argc, char* argv[]) {
 
-    double ck;
+    /* Inicializamos las variables */
+    //Doubles
+    double *a = NULL, *b = NULL, *c = NULL; //matrices y vector que almacenan valores aleatorios de tipo double.
+    double *d = NULL; //matriz que rellenamos con 0
+    double f = 0.0; //variable de salida
+    double ck; //double donde meteremos el numero de ciclos de reloj
 
-    if(argc != 2){
-        perror("\nERROR: use example: ./p2_ap1 N\n\n");
-        exit(EXIT_FAILURE);
+    //Enteros
+    int *ind, *posicionLibre; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
+    int i = 0, j = 0, k = 0; // indices usados en los bucles
+    int random, size, filas, columnas; // variables a usar en las operaciones
+
+     if(argc != 2){
+       perror("\nERROR: use example: ./p2_ap1 N\n\n");
+       exit(EXIT_FAILURE);
     }
+    //Igualamos tamanho por el valor que le pasamos por linea de comandos
+    size = atoi(argv[1]);
+     double e[size];
 
-     int N = atoi(argv[1]);
-
-    if (N <= 0 ) {
-        perror("\nERROR: wrong value for N\n");
-        exit(EXIT_FAILURE);
+    if (size <= 0 ) {
+         perror("\nERROR: wrong value for N\n");
+         exit(EXIT_FAILURE);
     }
-
-    //igualamos la N por el valor que le pasamos por linea de comandos
-
-
-    double a[N][8], b[8][N], c[8], e[N]; //matrices y vector que almacenan valores aleatorios de tipo double.
-    int ind[N]; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
-    int i, j, k, random;
-    int posicionLibre[N];
 
     //Con srand() establecemos la semilla del generador de numeros aleatorios
     srand(34);
 
-    double f = 0.0; //variable de salida
+    /* Inicializamos las matrices y vectores */
 
-    double d[N][N]; //matriz que rellenamos con 0
+    //A
+    filas = size;
+    columnas = 8;
+    a = (double *) malloc(filas  * columnas * sizeof(double));
+
+    //B
+    filas = 8;
+    columnas = size;
+    b = (double *) malloc(filas * columnas * sizeof(double));
+
+    //D
+    filas = size;
+    columnas = size;
+    //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
+    d = (double *) calloc(filas * columnas, sizeof(double));
+
+    //Inicializamos c, e, posicionLibre e ind
+    c = (double *) malloc(8 * sizeof(double));
+    posicionLibre = (int *) calloc(size, sizeof(int));
+    ind = (int *) malloc(size * sizeof(int));
 
     start_counter();
 
-    //Incializamos un vector con N posiciones de tal manera que sabemos que esta posicion esta libre
-    for (i = 0; i < N-4; i += 4) {
-        posicionLibre[i] = 0;
-        posicionLibre[i+1] = 0;
-        posicionLibre[i+2] = 0;
-    }
-
-    //En este for rellenamos el vector ind con numeros aleatorios entre 0 y N, y cuando ocupamos la posicion ponemos un 1
+    //En este for rellenamos el vector ind con numeros aleatorios entre 0 y tamanho, y cuando ocupamos la posicion ponemos un 1
     //en el vector posicion libre para saber que su posicion esta ocupada y asi no repetir numeros
-    for (i = 0; i < N; i++){
-        random = rand()%N;
-        while (posicionLibre[random] == 1) random = rand()%N;
+    for (i = 0; i < size; i++){
+        random = rand() % size;
+        while (posicionLibre[random] == 1) random = rand() % size;
 
         ind[random] = i;
         posicionLibre[random] = 1;
     }
 
+    /* Rellenamos las matrices y vectores con numeros aleatorios */
+    i = 0; j = 0; columnas = 0;
     //Le pasamos el puntero de la primera fila y la primera columna para despues moverlo en la funcion a la fila y columna deseada
-    fillMatrix(&a[0][0], N, 8, true);
-    fillMatrix(&b[0][0], 8, N, true);
-    fillMatrix(&d[0][0], N, N, false);
+    fillMatrix(&a[i * columnas + j], size, 8);
+    fillMatrix(&b[i * columnas + j], 8, size);
     //Para rellenar el array le decimos que es una matriz 1x8 ( si lo pensamos realmente es lo que es un array bidimensional )
-    fillMatrix(&c[0], 1, 8, true);
+    fillMatrix(&c[0], 1, 8);
 
-    //Realizamos las operaciones
-    for (i=0; i<N; i++) {
-        for (j = 0; j < N; j++) {
-            double temp = 0.0;
-            for (k = 0; k < 8; k+=4) {
-                temp += 2.0 * a[i][k] * (b[k][j] - c[k]);
-                temp += 2.0 * a[i][k+1] * (b[k+1][j] - c[k+1]);
-                temp += 2.0 * a[i][k+2] * (b[k+2][j] - c[k+2]);
-                temp += 2.0 * a[i][k+3] * (b[k+3][j] - c[k+3]);
+    columnas = size;
+
+    /* Realizamos las operaciones */
+
+    //Como cambio del primer apartado a este desenrrollamos el bucle de operaciones, para buscar una mejor optimizacion
+    //temporal:
+
+    /* Bucle sin desenrrollar
+     * for (i = 0; i < tamanho; i++) {
+        for (j = 0; j < tamanho; j++) {
+            for (k = 0; k < 8; k++) {
+                d[i * columnas + j] += 2.0 * a[i * 8 + k] * (b[k * columnas + j] - c[k]);
             }
-            d[i][j] = temp;
+        }
+    }
+     */
+
+    //Bucle desenrrollado
+    //Bucle anidado para iterar sobre las filas y columnas de la matriz
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            //Cálculo del índice para acceder al elemento (i,j) de la matriz
+            int ij = i * columnas + j;
+            //Inicialización de la variable de suma para la operación matricial
+            double sum = 0.0;
+            //Bucle interno para iterar sobre la dimensión k y realizar la operación matricial
+            for (k = 0; k < 8; k++) {
+                //Cálculo de los índices para acceder a los elementos de las matrices a, b y c
+                int ik = i * 8 + k;
+                int kj = k * columnas + j;
+                //Cálculo de la operación matricial y acumulación en la variable de suma
+                d[ij] += 2.0 * a[ik] * (b[kj] - c[k]);
+            }
         }
     }
 
-    for (i = 0; i < N; i++) {
-        e[i] = d[ind[i]][ind[i]] / 2;
+
+    for (i = 0; i < size; i++) {
+        e[i] = d[ind[i] * size + ind[i]] / 2;
         f += e[i];
     }
 
+
     ck = get_counter();
 
+    // Liberaciones de memoria
+    free(a); free(b); free(c); free(d);  free(posicionLibre); free(ind);
+
+    //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
 
-    //imprimimos el clock
+    // imprimimos el clock
     printf("\nClocks = %1.2lf \n",ck);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////* FUNCIONES DE OPERACION *////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
 * @param double* matrix = puntero que apunta a la posicion de la matrix
@@ -111,21 +161,21 @@ int main(int argc, char* argv[]) {
 * @description esta funcion rellena matrices de numeros aleatorios si se le indica o 0 si no
 * @return retorna la matriz pasada como argumento rellena de lo indicado (random o 0)
  * */
-void fillMatrix (double* matrix, int line, int column, bool isRandom) {
+void fillMatrix (double* matrix, int line, int column) {
     //Recorremos las filas con este primer for
     for(int i = 0; i < line; i++) {
         //Recorremos las columnas con este segundo for
         for (int j = 0; j < column; j++) {
-            //Si isRandom es true rellenamos la matriz con numeros aleatorios
-            if (isRandom){
-                //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
-                *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
-            }
-            //Si isRandom == false, metemos 0 en cada posicion
-            else *(matrix + i * column + j) = 0;
+            //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
+             *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
         }
     }
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////* FUNCIONES DE OPERACION DE RELOJ *////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Set *hi and *lo to the high and low order bits of the cycle counter.
 Implementation requires assembly code to use the rdtsc instruction. */
