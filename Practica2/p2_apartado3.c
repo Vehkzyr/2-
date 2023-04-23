@@ -142,42 +142,48 @@ double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind,
     int i, j, k;
 
     /* Operaciones sobre d */
-    // Bucle anidado para iterar sobre las filas y columnas de la matriz
     for (i = 0; i < size; i++) {
-        for (j = 0; j < size; j++) {
-            // Cálculo del índice para acceder al elemento (i,j) de la matriz
-            int ij = i * columnas + j;
+        //Comprobamos si size es divisible entre 8 para poder hacer las operaciones
+        if(size % 8 == 0) {
+            for (j = 0; j < size; j += 8) {
+                //Declaramos las variables en AVX
+                __m256d a_vec, b_vec, c_vec, d_vec;
+                __m256d constant = _mm256_set1_pd(2.0);
 
-            // Inicialización de la variable de suma para la operación matricial
-            __m256d sum = _mm256_setzero_pd();
+                //Cargamos las matrices y vectores en nuestras variables
+                d_vec = _mm256_loadu_pd(&d[i * columnas + j]);
+                c_vec = _mm256_loadu_pd(c);
+                a_vec = _mm256_loadu_pd(&a[i * 8]);
+                b_vec = _mm256_loadu_pd(&b[columnas + j]);
 
-            // Bucle interno para iterar sobre la dimensión k y realizar la operación matricial
-            for (k = 0; k < 8; k++) {
-                // Cálculo de los índices para acceder a los elementos de las matrices a, b y c
-                int ik = i * 8 + k;
-                int kj = k * columnas + j;
+                //Realiza las operaciones de suma e iguala d a ello
+                d_vec = _mm256_fmadd_pd(constant, a_vec, d_vec);
+                d_vec = _mm256_fmadd_pd(constant, _mm256_sub_pd(b_vec, c_vec), d_vec);
 
-                // Carga del elemento de la matriz a en un registro AVX para hacer broadcasting
-                __m256d a_ik = _mm256_broadcast_sd(&a[ik]);
-                // Carga de 4 elementos de la matriz b en un registro AVX sin alineación
-                __m256d b_kj = _mm256_loadu_pd(&b[kj]);
-                // Carga del elemento de la matriz c en un registro AVX para hacer broadcasting
-                __m256d c_k = _mm256_broadcast_sd(&c[k]);
-                // Resta de los elementos de los registros AVX b_kj y c_k
-                __m256d diff = _mm256_sub_pd(b_kj, c_k);
-                // Multiplicación de los elementos de los registros AVX a_ik y diff
-                __m256d prod = _mm256_mul_pd(a_ik, diff);
-                // Duplicación de los elementos de prod en un nuevo registro AVX
-                __m256d prod2 = _mm256_add_pd(prod, prod);
-                // Acumulación del registro AVX prod2 en el registro AVX sum
-                sum = _mm256_add_pd(sum, prod2);
+                //Se almacenan los valores en d_vec
+                _mm256_storeu_pd(&d[i * columnas + j], d_vec);
             }
-            // Creación de un array temporal de tamaño 4 y alineado a 32 bytes para almacenar los valores del registro AVX sum
-            double tmp[4]__attribute__((aligned(32)));
-            // Almacenamiento de los elementos de sum en el array temporal tmp
-            _mm256_store_pd(tmp, sum);
-            // Acumulación del resultado de tmp en el elemento (i,j) de la matriz d
-            d[ij] += tmp[0] + tmp[1] + tmp[2] + tmp[3];
+        }
+
+        else{
+            for (j = 0; j < size; j ++) {
+                //Declaramos las variables en AVX
+                __m256d a_vec, b_vec, c_vec, d_vec;
+                __m256d constant = _mm256_set1_pd(2.0);
+
+                //Cargamos las matrices y vectores en nuestras variables
+                d_vec = _mm256_loadu_pd(&d[i * columnas + j]);
+                c_vec = _mm256_loadu_pd(c);
+                a_vec = _mm256_loadu_pd(&a[i * 8]);
+                b_vec = _mm256_loadu_pd(&b[columnas + j]);
+
+                //Realiza las operaciones de suma e iguala d a ello
+                d_vec = _mm256_fmadd_pd(constant, a_vec, d_vec);
+                d_vec = _mm256_fmadd_pd(constant, _mm256_sub_pd(b_vec, c_vec), d_vec);
+
+                //Se almacenan los valores en d_vec
+                _mm256_storeu_pd(&d[i * columnas + j], d_vec);
+            }
         }
     }
 

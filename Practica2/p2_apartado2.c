@@ -100,37 +100,23 @@ int main(int argc, char* argv[]) {
     //Como cambio del primer apartado a este desenrrollamos el bucle de operaciones, para buscar una mejor optimizacion
     //temporal:
 
-    /* Bucle sin desenrrollar
-     * for (i = 0; i < tamanho; i++) {
-        for (j = 0; j < tamanho; j++) {
-            for (k = 0; k < 8; k++) {
-                d[i * columnas + j] += 2.0 * a[i * 8 + k] * (b[k * columnas + j] - c[k]);
-            }
-        }
-    }
-     */
-
-    //Bucle desenrrollado
-    //Bucle anidado para iterar sobre las filas y columnas de la matriz
-    for (i = 0; i < size; i++) {
+    /* Bucle sin desenrrollar*/
+     for (i = 0; i < size; i++) {
         for (j = 0; j < size; j++) {
-            //Cálculo del índice para acceder al elemento (i,j) de la matriz
-            int ij = i * columnas + j;
-            //Inicialización de la variable de suma para la operación matricial
-            double sum = 0.0;
-            //Bucle interno para iterar sobre la dimensión k y realizar la operación matricial
-            for (k = 0; k < 8; k++) {
-                //Cálculo de los índices para acceder a los elementos de las matrices a, b y c
-                int ik = i * 8 + k;
-                int kj = k * columnas + j;
-                //Cálculo de la operación matricial y acumulación en la variable de suma
-                d[ij] += 2.0 * a[ik] * (b[kj] - c[k]);
-            }
+            k = 0;
+            d[i * columnas + j] += 2.0 * a[i * 8 + k] * (b[k * columnas + j] - c[k]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 1)] * (b[(k + 1) * columnas + j] - c[k + 1]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 2)] * (b[(k + 2) * columnas + j] - c[k + 2]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 3)] * (b[(k + 3) * columnas + j] - c[k + 3]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 4)] * (b[(k + 4) * columnas + j] - c[k + 4]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 5)] * (b[(k + 5) * columnas + j] - c[k + 5]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 6)] * (b[(k + 6) * columnas + j] - c[k + 6]);
+            d[i * columnas + j] += 2.0 * a[i * 8 + (k + 7)] * (b[(k + 7) * columnas + j] - c[k + 7]);
         }
     }
 
 
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < size; i ++) {
         e[i] = d[ind[i] * size + ind[i]] / 2;
         f += e[i];
     }
