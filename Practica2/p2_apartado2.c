@@ -24,12 +24,12 @@ int main(int argc, char* argv[]) {
 
     /* Inicializamos las variables */
     //Doubles
-    double *a = NULL, *b = NULL, *c = NULL; //matrices y vector que almacenan valores aleatorios de tipo double.
-    double *d = NULL; //matriz que rellenamos con 0
-    double f = 0.0; //variable de salida
-    double ck; //double donde meteremos el numero de ciclos de reloj
+    double *a = NULL, *b = NULL, *c = NULL, *e = NULL; // matrices y vector que almacenan valores aleatorios de tipo double.
+    double *d = NULL; // matriz que rellenamos con 0
+    double f = 0.0; // variable de salida
+    double ck; // double donde meteremos el numero de ciclos de reloj
 
-    //Enteros
+    // Enteros
     int *ind, *posicionLibre; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
     int i = 0, j = 0, k = 0; // indices usados en los bucles
     int random, size, filas, columnas; // variables a usar en las operaciones
@@ -38,45 +38,42 @@ int main(int argc, char* argv[]) {
        perror("\nERROR: use example: ./p2_ap1 N\n\n");
        exit(EXIT_FAILURE);
     }
-    //Igualamos tamanho por el valor que le pasamos por linea de comandos
+    // Igualamos tamanho por el valor que le pasamos por linea de comandos
     size = atoi(argv[1]);
-     double e[size];
 
     if (size <= 0 ) {
          perror("\nERROR: wrong value for N\n");
          exit(EXIT_FAILURE);
     }
 
-    //Con srand() establecemos la semilla del generador de numeros aleatorios
+    // Con srand() establecemos la semilla del generador de numeros aleatorios
     srand(34);
 
     /* Inicializamos las matrices y vectores */
 
-    //A
+    // A
     filas = size;
     columnas = 8;
     a = (double *) malloc(filas  * columnas * sizeof(double));
 
-    //B
+    // B
     filas = 8;
     columnas = size;
     b = (double *) malloc(filas * columnas * sizeof(double));
 
-    //D
+    // D
     filas = size;
     columnas = size;
-    //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
-    d = (double *) calloc(filas * columnas, sizeof(double));
-
-    //Inicializamos c, e, posicionLibre e ind
+    
+    // Inicializamos c, e, posicionLibre e ind
     c = (double *) malloc(8 * sizeof(double));
+    e = (double *) malloc(size * sizeof(double));
     posicionLibre = (int *) calloc(size, sizeof(int));
     ind = (int *) malloc(size * sizeof(int));
 
-    start_counter();
 
-    //En este for rellenamos el vector ind con numeros aleatorios entre 0 y tamanho, y cuando ocupamos la posicion ponemos un 1
-    //en el vector posicion libre para saber que su posicion esta ocupada y asi no repetir numeros
+    // En este for rellenamos el vector ind con numeros aleatorios entre 0 y tamanho, y cuando ocupamos la posicion ponemos un 1
+    // en el vector posicion libre para saber que su posicion esta ocupada y asi no repetir numeros
     for (i = 0; i < size; i++){
         random = rand() % size;
         while (posicionLibre[random] == 1) random = rand() % size;
@@ -92,6 +89,11 @@ int main(int argc, char* argv[]) {
     fillMatrix(&b[i * columnas + j], 8, size);
     //Para rellenar el array le decimos que es una matriz 1x8 ( si lo pensamos realmente es lo que es un array bidimensional )
     fillMatrix(&c[0], 1, 8);
+
+    start_counter();
+
+    // Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
+    d = (double *) calloc(filas * columnas, sizeof(double));
 
     columnas = size;
 
@@ -125,7 +127,7 @@ int main(int argc, char* argv[]) {
     ck = get_counter();
 
     // Liberaciones de memoria
-    free(a); free(b); free(c); free(d);  free(posicionLibre); free(ind);
+    free(a); free(b); free(c); free(e); free(d);  free(posicionLibre); free(ind);
 
     //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
@@ -211,3 +213,4 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
+
