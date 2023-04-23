@@ -66,16 +66,13 @@ int main(int argc, char* argv[]) {
     //D
     filas = size;
     columnas = size;
-    //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
-    d = (double *) calloc(filas * columnas, sizeof(double));
+    
 
     //Inicializamos c, e, posicionLibre e ind
     c = (double *) malloc(8 * sizeof(double));
     e = (double *) malloc(size * sizeof(double));
     posicionLibre = (int *) malloc(size * sizeof(int));
     ind = (int *) malloc(size * sizeof(int));
-
-    start_counter();
 
     //Incializamos un vector con N posiciones de tal manera que sabemos que esta posicion esta libre
     for (i = 0; i < size - 4; i += 4) {
@@ -101,6 +98,11 @@ int main(int argc, char* argv[]) {
     fillMatrix(&b[i * columnas + j], 8, size);
     //Para rellenar el array le decimos que es una matriz 1x8 ( si lo pensamos realmente es lo que es un array bidimensional )
     fillMatrix(&c[0], 1, 8);
+
+    start_counter();
+
+    //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
+    d = (double *) calloc(filas * columnas, sizeof(double));
 
     columnas = size;
 
