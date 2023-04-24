@@ -64,11 +64,6 @@ int main(int argc, char* argv[]) {
     columnas = size;
     b = (double *) _mm_malloc(filas * columnas * sizeof(double),LINESIZE);
 
-    //D
-    filas = size;
-    columnas = size;
-
-
     //Inicializamos c, e, posicionLibre e ind
     c = (double *)_mm_malloc(8 * sizeof(double),LINESIZE);
     e = (double *) _mm_malloc(size * sizeof(double),LINESIZE);
@@ -102,8 +97,19 @@ int main(int argc, char* argv[]) {
 
     start_counter();
 
+    //D
+    filas = size;
+    columnas = size;
     //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
-    d = (double *) calloc(filas * columnas, sizeof(double));
+    d = (double *) _mm_malloc (filas * columnas, sizeof(double));
+    //Recorremos las filas con este primer for
+    for(i = 0; i < size; i++) {
+        //Recorremos las columnas con este segundo for
+        for (j = 0; j < size; j++) {
+            //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
+            *(d + i * size + j) = 0;
+        }
+    }
 
     columnas = size;
 
@@ -146,73 +152,29 @@ double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind,
 
     /* Operaciones sobre d */
     for (i = 0; i < size; i++) {
-        //Comprobamos si size es divisible entre 8 para poder hacer las operaciones mas optimizadas
-        if(size % 8 == 0) {
             for (j = 0; j < size; j += 8) {
                 //Declaramos las variables en AVX
-                __m256d a_vec, b_vec, c_vec, d_vec;
-                __m256d constant = _mm256_set1_pd(2.0);
+                __m512d a_vec, b_vec, c_vec, d_vec;
+                __m512d constant = _mm512_set1_pd(2.0);
 
                 //Cargamos las matrices y vectores en nuestras variables
-                d_vec = _mm256_loadu_pd(&d[i * columnas + j]);
-                c_vec = _mm256_loadu_pd(c);
-                a_vec = _mm256_loadu_pd(&a[i * 8]);
-                b_vec = _mm256_loadu_pd(&b[columnas + j]);
+                d_vec = _mm512_loadu_pd(&d[i * columnas + j]);
+                c_vec = _mm512_loadu_pd(c);
+                a_vec = _mm512_loadu_pd(&a[i * 8]);
+                b_vec = _mm512_loadu_pd(&b[columnas + j]);
 
                 //Realiza las operaciones de suma e iguala d a ello
-                d_vec = _mm256_fmadd_pd(constant, a_vec, d_vec);
-                d_vec = _mm256_fmadd_pd(constant, _mm256_sub_pd(b_vec, c_vec), d_vec);
+                d_vec = _mm512_fmadd_pd(constant, a_vec, d_vec);
+                d_vec = _mm512_fmadd_pd(constant, _mm512_sub_pd(b_vec, c_vec), d_vec);
 
                 //Se almacenan los valores en d_vec
-                _mm256_storeu_pd(&d[i * columnas + j], d_vec);
+                _mm512_storeu_pd(&d[i * columnas + j], d_vec);
             }
-        }
-
-        else{
-            for (j = 0; j < size; j ++) {
-                //Declaramos las variables en AVX
-                __m256d a_vec, b_vec, c_vec, d_vec;
-                __m256d constant = _mm256_set1_pd(2.0);
-
-                //Cargamos las matrices y vectores en nuestras variables
-                d_vec = _mm256_loadu_pd(&d[i * columnas + j]);
-                c_vec = _mm256_loadu_pd(c);
-                a_vec = _mm256_loadu_pd(&a[i]);
-                b_vec = _mm256_loadu_pd(&b[columnas + j]);
-
-                //Realiza las operaciones de suma e iguala d a ello
-                d_vec = _mm256_fmadd_pd(constant, a_vec, d_vec);
-                d_vec = _mm256_fmadd_pd(constant, _mm256_sub_pd(b_vec, c_vec), d_vec);
-
-                //Se almacenan los valores en d_vec
-                _mm256_storeu_pd(&d[i * columnas + j], d_vec);
-            }
-        }
     }
 
     /* Operaciones para el calculo de f */
 
-    // Inicia una variable __m256d sum, que es un vector de 256 bits que contiene 4 números en punto flotante de doble precisión, y lo inicializa en cero.
-    __m256d sum = _mm256_setzero_pd();
-
-    // Para cada índice "i" en el rango [0, size):
-    for (i = 0; i < size; i++) {
-        // Calcula el índice "index" como el índice de la matriz d correspondiente a la fila y columna especificadas por los valores de ind[i].
-        int index = ind[i] * size + ind[i];
-        // Crea un vector __m256d "val" que contiene el valor de d[index], copiando ese valor en cada posición del vector.
-        __m256d val = _mm256_broadcast_sd(&d[index]);
-        // Agrega el vector "val" al vector "sum" utilizando la operación "addition" de AVX.
-        sum = _mm256_add_pd(sum, val);
-    }
-
-    // Crea un arreglo "tmp" de 4 elementos en doble precisión y alineado a 32 bytes.
-    double tmp[4]__attribute__((aligned(32)));
-
-    // Almacena el contenido del vector "sum" en el arreglo "tmp".
-    _mm256_store_pd(tmp, sum);
-
-    // Devuelve la suma de los valores del arreglo "tmp"
-    return tmp[0] + tmp[1] + tmp[2] + tmp[3];
+    return 0.0;
 }
 
 /*
@@ -232,6 +194,27 @@ void fillMatrix (double* matrix, int line, int column) {
             *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
         }
     }
+}
+
+/*
+* @param double* matrix = puntero que apunta a la posicion de la matrix
+* @param int line = numero de filas de la matrix
+* @param int column = numero de columnas
+* @description crea una matriz que es la traspuesta de la matriz pasada como argumentos
+* @return retorna unaz traspuesta
+ * */
+double* transpose(double* matrix, int rows, int columns) {
+    int i, j;
+    double temp;
+    double* transposed = (double*)malloc(rows * columns * sizeof(double));
+
+    // Crear matriz transpuesta
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < columns; j++) {
+            transposed[i * rows + j] = matrix[j * columns + i];
+        }
+    }
+    return transposed;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

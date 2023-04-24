@@ -34,16 +34,16 @@ int main(int argc, char* argv[]) {
     int i = 0, j = 0, k = 0; // indices usados en los bucles
     int random, size, filas, columnas; // variables a usar en las operaciones
 
-     if(argc != 2){
-       perror("\nERROR: use example: ./p2_ap1 N\n\n");
-       exit(EXIT_FAILURE);
+    if(argc != 2){
+        perror("\nERROR: use example: ./p2_ap1 N\n\n");
+        exit(EXIT_FAILURE);
     }
     // Igualamos tamanho por el valor que le pasamos por linea de comandos
     size = atoi(argv[1]);
 
     if (size <= 0 ) {
-         perror("\nERROR: wrong value for N\n");
-         exit(EXIT_FAILURE);
+        perror("\nERROR: wrong value for N\n");
+        exit(EXIT_FAILURE);
     }
 
     // Con srand() establecemos la semilla del generador de numeros aleatorios
@@ -61,10 +61,6 @@ int main(int argc, char* argv[]) {
     columnas = size;
     b = (double *) malloc(filas * columnas * sizeof(double));
 
-    // D
-    filas = size;
-    columnas = size;
-    
     // Inicializamos c, e, posicionLibre e ind
     c = (double *) malloc(8 * sizeof(double));
     e = (double *) malloc(size * sizeof(double));
@@ -92,6 +88,10 @@ int main(int argc, char* argv[]) {
 
     start_counter();
 
+    // D
+    filas = size;
+    columnas = size;
+
     // Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
     d = (double *) calloc(filas * columnas, sizeof(double));
 
@@ -103,9 +103,10 @@ int main(int argc, char* argv[]) {
     //temporal:
 
     /* Bucle sin desenrrollar*/
-     for (i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         for (j = 0; j < size; j++) {
             k = 0;
+            //Desenrrollamos el bucle de k de tal manera que no lo ponemos (k hacia 8 iteraciones)
             d[i * columnas + j] += 2.0 * a[i * 8 + k] * (b[k * columnas + j] - c[k]);
             d[i * columnas + j] += 2.0 * a[i * 8 + (k + 1)] * (b[(k + 1) * columnas + j] - c[k + 1]);
             d[i * columnas + j] += 2.0 * a[i * 8 + (k + 2)] * (b[(k + 2) * columnas + j] - c[k + 2]);
@@ -155,7 +156,7 @@ void fillMatrix (double* matrix, int line, int column) {
         //Recorremos las columnas con este segundo for
         for (int j = 0; j < column; j++) {
             //Mediante este arreglo metemos los valores aleatorios e cada posicion, moviendo el puntero a la siguiente posicion
-             *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
+            *(matrix + i * column + j) = ((double) rand() / (double) RAND_MAX) * 100;
         }
     }
 }
@@ -213,4 +214,3 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
-

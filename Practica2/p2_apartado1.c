@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     filas = size;
     columnas = size;
     d = (double *) malloc(filas * columnas * sizeof(double));
-    
+
     fillMatrix(&d[i * columnas + j], size, size, false);
 
     columnas = size;
@@ -199,8 +199,4 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
-
-
-
-
 
