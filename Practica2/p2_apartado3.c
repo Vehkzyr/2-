@@ -1,14 +1,15 @@
 /*
- * @Author: Pablo Lobato and Pablo Seijo
- * @Company: USC ETSE
- * @Date: 13/3/2023
- */
+* @Author: Pablo Lobato and Pablo Seijo
+* @Company: USC ETSE
+* @Date: 13/3/2023
+*/
 
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <immintrin.h>
+
+#define LINESIZE 64
 
 double AVXMatrixOperation(double *a, double *b, double *c, double *d, int* ind, int size, int columnas);
 void fillMatrix (double* matrix,int line, int column);
@@ -56,23 +57,23 @@ int main(int argc, char* argv[]) {
     //A
     filas = size;
     columnas = 8;
-    a = (double *) malloc(filas  * columnas * sizeof(double));
+    a = (double *)_mm_malloc(filas  * columnas * sizeof(double),LINESIZE);
 
     //B
     filas = 8;
     columnas = size;
-    b = (double *) malloc(filas * columnas * sizeof(double));
+    b = (double *) _mm_malloc(filas * columnas * sizeof(double),LINESIZE);
 
     //D
     filas = size;
     columnas = size;
-    
+
 
     //Inicializamos c, e, posicionLibre e ind
-    c = (double *) malloc(8 * sizeof(double));
-    e = (double *) malloc(size * sizeof(double));
-    posicionLibre = (int *) malloc(size * sizeof(int));
-    ind = (int *) malloc(size * sizeof(int));
+    c = (double *)_mm_malloc(8 * sizeof(double),LINESIZE);
+    e = (double *) _mm_malloc(size * sizeof(double),LINESIZE);
+    posicionLibre = (int *) calloc(size * sizeof(int),LINESIZE);
+    ind = (int *) _mm_malloc(size * sizeof(int),LINESIZE);
 
     //Incializamos un vector con N posiciones de tal manera que sabemos que esta posicion esta libre
     for (i = 0; i < size - 4; i += 4) {
@@ -114,7 +115,7 @@ int main(int argc, char* argv[]) {
     ck = get_counter();
 
     // Liberaciones de memoria
-    free(a); free(b); free(c); free(d); free(e); free(posicionLibre); free(ind);
+    _mm_free(a); _mm_free(b); _mm_free(c); _mm_free(d); _mm_free(e); free(posicionLibre); _mm_free(ind);
 
     //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
@@ -145,7 +146,7 @@ double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind,
 
     /* Operaciones sobre d */
     for (i = 0; i < size; i++) {
-        //Comprobamos si size es divisible entre 8 para poder hacer las operaciones
+        //Comprobamos si size es divisible entre 8 para poder hacer las operaciones mas optimizadas
         if(size % 8 == 0) {
             for (j = 0; j < size; j += 8) {
                 //Declaramos las variables en AVX
@@ -176,7 +177,7 @@ double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind,
                 //Cargamos las matrices y vectores en nuestras variables
                 d_vec = _mm256_loadu_pd(&d[i * columnas + j]);
                 c_vec = _mm256_loadu_pd(c);
-                a_vec = _mm256_loadu_pd(&a[i * 8]);
+                a_vec = _mm256_loadu_pd(&a[i]);
                 b_vec = _mm256_loadu_pd(&b[columnas + j]);
 
                 //Realiza las operaciones de suma e iguala d a ello
