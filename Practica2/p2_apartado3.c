@@ -10,9 +10,13 @@
 #include <immintrin.h>
 
 #define LINESIZE 64
+#define CONSTANT _mm512_set_pd(2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0)
+
+
 
 double AVXMatrixOperation(double *a, double *b, double *c, double *d, int* ind, int size, int columnas);
 void fillMatrix (double* matrix,int line, int column);
+double* transpose(double* matrix, int rows, int columns);
 
 void start_counter();
 double get_counter();
@@ -71,10 +75,8 @@ int main(int argc, char* argv[]) {
     ind = (int *) _mm_malloc(size * sizeof(int),LINESIZE);
 
     //Incializamos un vector con N posiciones de tal manera que sabemos que esta posicion esta libre
-    for (i = 0; i < size - 4; i += 4) {
+    for (i = 0; i < size; i++) {
         posicionLibre[i] = 0;
-        posicionLibre[i+1] = 0;
-        posicionLibre[i+2] = 0;
     }
 
     //En este for rellenamos el vector ind con numeros aleatorios entre 0 y tamanho, y cuando ocupamos la posicion ponemos un 1
@@ -101,7 +103,7 @@ int main(int argc, char* argv[]) {
     filas = size;
     columnas = size;
     //Inicializamos d con calloc para que todos sus argumentos sean 0 y nos ahorramos la llamada a la funcion, asi como sus bucles
-    d = (double *) _mm_malloc (filas * columnas, sizeof(double));
+    d = (double *) _mm_malloc (filas * columnas * sizeof(double), LINESIZE);
     //Recorremos las filas con este primer for
     for(i = 0; i < size; i++) {
         //Recorremos las columnas con este segundo for
@@ -112,7 +114,7 @@ int main(int argc, char* argv[]) {
     }
 
     columnas = size;
-
+    b = transpose(b, size, 8);
     /* Realizamos las operaciones */
 
     //Transformamos las operaciones a AVX y para simplicidad en la lectura del codigo lo hacemos en una funcion a parte
@@ -148,33 +150,44 @@ int main(int argc, char* argv[]) {
 * @return devuelve un double con las operaciones realizadas
 */
 double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind, int size, int columnas) {
-    int i, j, k;
+    //Declaramos los indices
+    int i, j;
+    //Valor que queremos obtener
+    double f;
+
+    //Declaramos las variables en AVX
+    __m512d a_vec, b_vec, c_vec, d_vec;
+    __m512d constant = CONSTANT;
 
     /* Operaciones sobre d */
     for (i = 0; i < size; i++) {
             for (j = 0; j < size; j += 8) {
-                //Declaramos las variables en AVX
-                __m512d a_vec, b_vec, c_vec, d_vec;
-                __m512d constant = _mm512_set1_pd(2.0);
 
                 //Cargamos las matrices y vectores en nuestras variables
                 d_vec = _mm512_loadu_pd(&d[i * columnas + j]);
                 c_vec = _mm512_loadu_pd(c);
                 a_vec = _mm512_loadu_pd(&a[i * 8]);
-                b_vec = _mm512_loadu_pd(&b[columnas + j]);
+                b_vec = _mm512_loadu_pd(&b[i * 8]);
 
                 //Realiza las operaciones de suma e iguala d a ello
-                d_vec = _mm512_fmadd_pd(constant, a_vec, d_vec);
-                d_vec = _mm512_fmadd_pd(constant, _mm512_sub_pd(b_vec, c_vec), d_vec);
+                d_vec = _mm512_mul_pd(constant, a_vec);
+                d_vec = _mm512_mul_pd(d_vec, _mm512_sub_pd(b_vec, c_vec));
 
                 //Se almacenan los valores en d_vec
-                _mm512_storeu_pd(&d[i * columnas + j], d_vec);
+                // _mm512_storeu_pd(&d[i * columnas + j], d_vec);
+                d[i * columnas + j] =  _mm512_reduce_add_pd(d_vec);
             }
     }
 
+    __m512d e_vec;
     /* Operaciones para el calculo de f */
+    for(i = 0; i < size ; i++){
+        d_vec = _mm512_loadu_pd(&d[ind[i] * size + ind[i]]);
+        e_vec = _mm512_div_pd(d_vec, constant);
+        f += _mm512_reduce_add_pd(e_vec);
+    }
 
-    return 0.0;
+    return f;
 }
 
 /*
@@ -201,17 +214,17 @@ void fillMatrix (double* matrix, int line, int column) {
 * @param int line = numero de filas de la matrix
 * @param int column = numero de columnas
 * @description crea una matriz que es la traspuesta de la matriz pasada como argumentos
-* @return retorna unaz traspuesta
+* @return retorna una traspuesta
  * */
 double* transpose(double* matrix, int rows, int columns) {
     int i, j;
     double temp;
-    double* transposed = (double*)malloc(rows * columns * sizeof(double));
+    double* transposed = (double*)_mm_malloc(rows * columns * sizeof(double),LINESIZE);
 
     // Crear matriz transpuesta
     for (i = 0; i < rows; i++) {
         for (j = 0; j < columns; j++) {
-            transposed[i * rows + j] = matrix[j * columns + i];
+            transposed[i * columns + j] = matrix[j * rows + i];
         }
     }
     return transposed;
