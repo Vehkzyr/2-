@@ -11,34 +11,59 @@ import os
 N_parameters = [250, 500, 750, 1000, 1500, 2000, 2550, 3000]
 
 # Lee los valores desde el archivo de texto
-with open('Datos.txt', 'r') as f:
+with open('grafica.txt', 'r') as f:
     values = [float(x) for x in f.readlines()]
 
-# crear un array de arrays dividido en los grupos de 8 necesarios para la realizacion de
-# las graficas, ergo groups[0] = {list: 8} [...], y asi hasta los 4 grupos necesarios, para los diferentes codigos
-groups = [values[i:i + 8] for i in range(0, len(values), 8)]
+# crear un array de arrays dividido en los grupos de 10 necesarios para la realizacion de
+# las graficas, ergo groups[0] = {list: 10} [...], y asi hasta los 8 grupos necesarios, para los diferentes valores de N
+groups = [values[i:i + 10] for i in range(0, len(values), 10)]
 
-# Crea una gráfica con múltiples líneas
-fig, ax = plt.subplots()
+# Crea una gráfica con múltiples líneas para las primeras 4 N
+fig1, ax1 = plt.subplots()
 
 #Ajustamos el tamaño de la figura
-fig.set_size_inches(12, 8)
+fig1.set_size_inches(12, 8)
 
 # Añade cada conjunto de datos como una nueva línea en la misma gráfica
-for i, group in enumerate(groups):
-    ax.plot(N_parameters, group, marker = 'o', markersize = 5, label = f'N = {N_parameters[i]}')
+for i, group in enumerate(groups[:4]):
+    ax1.plot(range(1, 11), group, marker = 'o', markersize = 5, label = f'N = {N_parameters[i]}')
 
 # Título de la gráfica
-ax.set_title('Numero de Ciclos por cada tamaño de Matriz')
+ax1.set_title('Tics de reloj para las primeras 4 N')
 
 # Nombre de los ejes x e y
-ax.set_xlabel('Parámetros de N')
-ax.set_ylabel('Número de ciclos')
+ax1.set_xlabel('Número de ejecución')
+ax1.set_ylabel('Tics de reloj')
 
 # Añadimos la leyenda
-ax.legend(loc = 'best')
+ax1.legend(loc = 'best')
 
 # Guardamos la gráfica en un archivo png
-plt.savefig('grafica.png')
+plt.savefig('grafica1.png')
 
-print("Por favor, compruebe que se ha generado el archivo grafica.png en la siguiente lista: ", os.listdir())
+# Crea una gráfica con múltiples líneas para las últimas 4 N
+fig2, ax2 = plt.subplots()
+
+#Ajustamos el tamaño de la figura
+fig2.set_size_inches(12, 8)
+
+colors = ['b', 'g', 'r', 'm']  # colores diferentes para cada línea
+
+# Añade cada conjunto de datos como una nueva línea en la misma gráfica
+for i, group in enumerate(groups[4:]):
+    ax2.plot(range(1, 11), group, color=colors[i], marker='o', markersize=5, label=f'N = {N_parameters[i+4]}')
+
+# Título de la gráfica
+ax2.set_title('Tics de reloj para las últimas 4 N')
+
+# Nombre de los ejes x e y
+ax2.set_xlabel('Número de ejecución')
+ax2.set_ylabel('Tics de reloj')
+
+# Añadimos la leyenda
+ax2.legend(loc = 'best')
+
+# Guardamos la gráfica en un archivo png
+plt.savefig('grafica2.png')
+
+print("Por favor, compruebe que se han generado los archivos grafica1.png y grafica2.png en la siguiente lista: ", os.listdir())
