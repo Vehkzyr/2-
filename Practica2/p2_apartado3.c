@@ -14,7 +14,7 @@
 
 
 
-double AVXMatrixOperation(double *a, double *b, double *c, double *d, int* ind, int size, int columnas);
+void AVXMatrixOperation(double *a, double *b, double *c, double *d, int* ind, int size, int columnas);
 void fillMatrix (double* matrix,int line, int column);
 double* transpose(double* matrix, int rows, int columns);
 
@@ -118,7 +118,12 @@ int main(int argc, char* argv[]) {
     /* Realizamos las operaciones */
 
     //Transformamos las operaciones a AVX y para simplicidad en la lectura del codigo lo hacemos en una funcion a parte
-    f = AVXMatrixOperation(a, b, c, d, ind, size, columnas);
+    AVXMatrixOperation(a, b, c, d, ind, size, columnas);
+
+    for (i = 0; i < size; i ++) {
+        e[i] = d[ind[i] * size + ind[i]] / 2;
+        f += e[i];
+    }
 
     ck = get_counter();
 
@@ -149,7 +154,7 @@ int main(int argc, char* argv[]) {
  *             cantidades de datos
 * @return devuelve un double con las operaciones realizadas
 */
-double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind, int size, int columnas) {
+void AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind, int size, int columnas) {
     //Declaramos los indices
     int i, j;
     //Valor que queremos obtener
@@ -161,33 +166,21 @@ double AVXMatrixOperation(double *a, double *b, double *c, double *d,  int *ind,
 
     /* Operaciones sobre d */
     for (i = 0; i < size; i++) {
-            for (j = 0; j < size; j += 8) {
+            for (j = 0; j < size; j ++) {
 
                 //Cargamos las matrices y vectores en nuestras variables
-                d_vec = _mm512_loadu_pd(&d[i * columnas + j]);
-                c_vec = _mm512_loadu_pd(c);
-                a_vec = _mm512_loadu_pd(&a[i * 8]);
-                b_vec = _mm512_loadu_pd(&b[i * 8]);
+                c_vec = _mm512_load_pd(c);
+                a_vec = _mm512_load_pd(&a[i * 8]);
+                b_vec = _mm512_load_pd(&b[i * 8]);
 
                 //Realiza las operaciones de suma e iguala d a ello
-                d_vec = _mm512_mul_pd(constant, a_vec);
-                d_vec = _mm512_mul_pd(d_vec, _mm512_sub_pd(b_vec, c_vec));
+                d_vec = _mm512_mul_pd(_mm512_mul_pd(constant, a_vec), _mm512_sub_pd(b_vec, c_vec));
 
                 //Se almacenan los valores en d_vec
                 // _mm512_storeu_pd(&d[i * columnas + j], d_vec);
                 d[i * columnas + j] =  _mm512_reduce_add_pd(d_vec);
             }
     }
-
-    __m512d e_vec;
-    /* Operaciones para el calculo de f */
-    for(i = 0; i < size ; i++){
-        d_vec = _mm512_loadu_pd(&d[ind[i] * size + ind[i]]);
-        e_vec = _mm512_div_pd(d_vec, constant);
-        f += _mm512_reduce_add_pd(e_vec);
-    }
-
-    return f;
 }
 
 /*
@@ -282,3 +275,7 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
+   
+   
+
+              
