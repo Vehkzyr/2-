@@ -33,16 +33,24 @@ int main(int argc, char* argv[]) {
     int *ind, *posicionLibre; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
     int i = 0, j = 0, k = 0; // indices usados en los bucles
     int random, size, filas, columnas; // variables a usar en las operaciones
+    FILE* fResultados;
 
     if(argc != 2){
-        perror("\nERROR: use example: ./p2_ap1 N\n\n");
+        printf("\nERROR: use example: ./p2_ap1 N\n\n");
         exit(EXIT_FAILURE);
     }
     // Igualamos tamanho por el valor que le pasamos por linea de comandos
     size = atoi(argv[1]);
 
     if (size <= 0 ) {
-        perror("\nERROR: wrong value for N\n");
+        printf("\nERROR: wrong value for N\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fResultados = fopen("resultados_apartado4.txt", "a");
+
+    if (fResultados == NULL) {
+        printf("Error al abrir el archivo\n");
         exit(EXIT_FAILURE);
     }
 
@@ -102,7 +110,7 @@ int main(int argc, char* argv[]) {
     //Como cambio del primer apartado a este desenrrollamos el bucle de operaciones, para buscar una mejor optimizacion
     //temporal:
 
-    /* Bucle sin desenrrollar*/
+    /* Bucle desenrrollado*/
     for (i = 0; i < size; i++) {
         for (j = 0; j < size; j++) {
             k = 0;
@@ -133,8 +141,10 @@ int main(int argc, char* argv[]) {
     //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
 
-    // imprimimos el clock
-    printf("\nClocks = %1.2lf \n",ck);
+    // // imprimimos el clock
+    // printf("\nClocks = %1.2lf \n",ck);
+    fprintf(fResultados, "%1.2lf \n",ck);
+    fclose(fResultados);
 }
 
 
@@ -214,3 +224,5 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
+
+

@@ -33,17 +33,31 @@ int main(int argc, char* argv[]) {
     // Enteros
     int *ind, *posicionLibre; //vector desordenado aleatoriamente que contiene índices de fila/columna sin que se repitan.
     int i = 0, j = 0, k = 0; // indices usados en los bucles
-    int random, size, filas, columnas; // variables a usar en las operaciones
+    int random, size, numeroHilos, filas, columnas; // variables a usar en las operaciones
+    FILE* fResultados;
 
-    if(argc != 2){
-        perror("\nERROR: use example: ./p2_ap1 N\n\n");
+    if(argc != 3){
+        perror("\nERROR: use example: ./p2_apartado4 N threads\n\n");
         exit(EXIT_FAILURE);
     }
     // Igualamos tamanho por el valor que le pasamos por linea de comandos
     size = atoi(argv[1]);
+    numeroHilos = atoi(argv[2]);
 
     if (size <= 0 ) {
         perror("\nERROR: wrong value for N\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (numeroHilos <= 0 ) {
+        perror("\nERROR: wrong value for threads\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fResultados = fopen("resultados_apartado4.txt", "a");
+
+    if (fResultados == NULL) {
+        printf("Error al abrir el archivo\n");
         exit(EXIT_FAILURE);
     }
 
@@ -87,6 +101,7 @@ int main(int argc, char* argv[]) {
     //Para rellenar el array le decimos que es una matriz 1x8 ( si lo pensamos realmente es lo que es un array bidimensional )
     fillMatrix(&c[0], 1, 8);
 
+
     start_counter();
 
     // D
@@ -103,9 +118,9 @@ int main(int argc, char* argv[]) {
     //Como cambio del primer apartado a este desenrrollamos el bucle de operaciones, para buscar una mejor optimizacion
     //temporal:
 
-    #pragma omp parallel shared(a, b, c, d, e, f) private(i, j, k)  num_threads (2)
+    #pragma omp parallel shared(a, b, c, d, e, f, k) private(i, j)  num_threads (numeroHilos)
     {
-        #pragma omp for collapse(2) schedule(static)
+        #pragma omp for schedule(static)
         for (i = 0; i < size; i++) {
             for (j = 0; j < size; j++) {
                 k = 0;
@@ -123,7 +138,7 @@ int main(int argc, char* argv[]) {
 
         #pragma omp for schedule(static)
         for (i = 0; i < size; i++) {
-            e[i] += d[ind[i] * size + ind[i]] / 2;
+            e[i] = d[ind[i] * size + ind[i]] / 2;
         }
 
     }
@@ -141,7 +156,9 @@ int main(int argc, char* argv[]) {
     printf("\nf: %1.10lf", f);
 
     // imprimimos el clock
-    printf("\nClocks = %1.2lf \n",ck);
+    // printf("\nClocks = %1.2lf \n",ck);
+    fprintf(fResultados, "%1.2lf \n",ck);
+    fclose(fResultados);
 }
 
 

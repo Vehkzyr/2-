@@ -41,6 +41,8 @@ int main(int argc, char* argv[]) {
     int i = 0, j = 0, k = 0; // indices usados en los bucles
     int random, size, filas, columnas; // variables a usar en las operaciones
 
+    FILE* fResultados;
+
     if(argc != 2){
         perror("\nERROR: use example: ./p2_ap1 N\n\n");
         exit(EXIT_FAILURE);
@@ -50,6 +52,13 @@ int main(int argc, char* argv[]) {
 
     if (size <= 0 ) {
         perror("\nERROR: wrong value for N\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fResultados = fopen("resultados_apartado3.txt", "a");
+
+    if (fResultados == NULL) {
+        printf("Error al abrir el archivo\n");
         exit(EXIT_FAILURE);
     }
 
@@ -133,8 +142,10 @@ int main(int argc, char* argv[]) {
     //Imprimimos nuestro resultado
     printf("\nf: %1.10lf", f);
 
-    // imprimimos el clock
-    printf("\nClocks = %1.2lf \n",ck);
+    // // imprimimos el clock
+    // printf("\nClocks = %1.2lf \n",ck);
+    fprintf(fResultados, "%1.2lf \n",ck);
+    fclose(fResultados);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -275,7 +286,3 @@ double mhz(int verbose, int sleeptime)
         printf("\n Processor clock rate = %.1f MHz\n", rate);
     return rate;
 }
-   
-   
-
-              

@@ -127,8 +127,8 @@ int main(int argc, char* argv[]) {
 
     printf("\nf: %1.10lf", f);
 
-    // imprimimos el clock
-    printf("\nClocks = %1.2lf \n",ck);
+    // // imprimimos el clock
+    // printf("\nClocks = %1.2lf \n",ck);
     fprintf(fResultados, "%1.2lf \n",ck);
     fclose(fResultados);
 }
